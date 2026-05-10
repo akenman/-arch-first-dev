@@ -1,100 +1,55 @@
 # arch-first-dev
 
-架构优先的 AI 编程方法论 —— 先画蓝图，再逐格填充，全局逻辑零断裂。
+让 AI 先画架构蓝图再写代码，而不是上来就直接生成一堆文件。
 
-## 一句话
+核心思路很简单：AI 在写任何代码之前，先把整个项目的模块、接口、依赖关系画在 `BLUEPRINT.md` 里，然后按依赖顺序从底层往上一层一层填。每个接口要写明前置条件、后置条件、错误处理和副作用——不是"大概对"，而是声明就要可验证。
 
-让 AI 在写代码之前，先把整个产品的架构画在一份文件里。然后按依赖顺序从底层往上，一次填一个模块。蓝图就是全局眼睛。
+## 怎么用
 
-## 快速开始（3 分钟）
+把整个目录复制到 skills 目录：
 
 ```bash
-# 1. 安装：复制到 skills 目录
-cp -r arch-first-dev ~/.deepseek/skills/      # DeepSeek TUI
-cp -r arch-first-dev ~/.claude/skills/        # Claude Code
-
-# 2. 在 AI 编程工具中输入：
-"用 arch-first-dev 帮我做一个命令行待办事项工具"
-
-# 3. AI 自动：
-#    → 画蓝图（BLUEPRINT.md）
-#    → 逐模块填充实现
-#    → 运行时验证
-#    → 生成人类可读的架构摘要（SUMMARY.md）
+cp -r arch-first-dev ~/.deepseek/skills/   # DeepSeek TUI
+cp -r arch-first-dev ~/.claude/skills/     # Claude Code
 ```
 
-## 三层采用粒度
+然后在 AI 编程工具里说：
 
-不一定要走完整流程，按需选择：
+> 用 arch-first-dev 帮我做一个命令行待办事项工具
 
-| 粒度 | 适合场景 | 产出 |
-|------|---------|------|
-| L1 行为契约 | 设计接口、Review 代码 | pre/post/error/side-effect 声明 |
-| L2 约束驱动 | 重构、修复接口不一致 | L1 + 7 条约束检查 |
-| L3 完整流程 | 新项目、大型重构 | 蓝图 → 填充 → 验证 |
+AI 会自动走 Phase 1（画蓝图）→ Phase 2（逐模块实现）→ Phase 3（验证）。
 
-## 核心特性
+## 不是什么场景都要走完整流程
 
-- **蓝图填充模型**：BLUEPRINT.md 作为全局导航 + 进度追踪 + 空位标记
-- **7 条硬约束**：用户确认门、一次一格、依赖先填、变更有痕...
-- **3 层幻觉防护**：行为声明 (pre/post/error/side-effect) + 边界矩阵 + 错误链映射
-- **上下文压力感知**：4 个可观察信号，自动释放已实现代码
-- **规模自适应**：≤10 接口简化模式，>50 接口风险导向验证
-- **渐进式采用**：L1/L2/L3 三层粒度，按需选择
+分三层，按需用：
 
-## 平台 & 模型适配
+- **L1** — 只定义接口的 pre/post/error/side-effect，不画蓝图。适合设计接口、review 代码
+- **L2** — L1 + 7 条约束检查。适合重构、修接口不一致
+- **L3** — 完整的蓝图→填充→验证。适合新项目或大型重构
 
-- **5 平台**：DeepSeek TUI / Claude Code / Trae / Cursor / Codex CLI
-- **8 模型**：DeepSeek V4/V3 / Claude 4.x / GPT-4o / GLM-4 / Qwen 3 / Mistral Large / Llama 4
-- **新模型自动适配**：4 问题自分类，未来模型零维护
+## 解决了什么问题
 
-## Token 收益
+AI 写代码最常见的翻车方式不是报错，而是**不报错但逻辑断裂**——跨模块的数据流对不上，函数返回值上游和下游预期的不一样。这份 skill 的核心就是让逻辑在写代码之前就被验证。
 
-| 项目规模 | 不使用 skill | 使用 skill | 节省 |
-|---------|------------|-----------|------|
-| 4 模块 / 15 接口 | ~22,000 tokens | ~8,150 tokens | **63%** |
-| 10 模块 | ~80,000 tokens | ~18,000 tokens | **77%** |
-| 20 模块 | ~280,000 tokens | ~35,000 tokens | **87%** |
+具体做法：
+- 每个接口强制声明 pre/post/error/side-effect，写代码时逐行对照
+- 模块按依赖排序，下层没做完上层不动
+- 改蓝图必须记录变更原因（@CHANGE），防止隐式修改导致接口漂移
 
-**DeepSeek V4 专项**：prefix cache 命中率从 ~15% 提升到 ~90%，每次填充成本降低约 10×。
-
-## 目录结构
+## 目录
 
 ```
 arch-first-dev/
-├── SKILL.md                        # L1 核心（始终加载，~2,250 tokens）
+├── SKILL.md                      # 核心流程，始终加载
 └── references/
-    ├── platform-adaptation.md      # L2: 平台工具映射表
-    ├── model-adaptation.md         # L2: 模型适配 + 能力探针
-    └── advanced-features.md        # L3: 高级特性 + 测试 + 逆向蓝图
+    ├── platform-adaptation.md    # 不同 AI 工具的命令映射
+    ├── model-adaptation.md       # 不同模型的参数适配
+    └── advanced-features.md      # Behavior-Code 对照、并行填充、多会话协作等
 ```
 
-## 实战示例
+## 示例
 
-以下是一个用本 skill 从零构建的 **Task CLI** 项目（命令行任务管理器）：
-
-```markdown
-# 项目蓝图 — Task CLI
-
-@PROGRESS
-  storage        ██████████ [done]
-  tasks          ██████████ [done]
-  stats          ██████████ [done]
-  cli            ██████████ [done]
-  ──────────────────────────────
-  总计: 4/4 模块完成 (100%)
-
-@MODULE storage      ← 第 1 层: JSON 文件读写（loadTasks / saveTasks）
-@MODULE tasks         ← 第 2 层: 增删改查 + 状态变更（7 接口）
-@MODULE stats         ← 第 3 层: 完成率统计 + 逾期检测（2 接口）
-@MODULE cli           ← 第 4 层: 参数解析 + 格式化输出（4 接口）
-
-9 条 @FLOW: 添加/列出/查看/更新/删除/完成/开始/统计/逾期
-15 个接口全部 pre/post/error/side-effect 行为声明
-257 行有效代码，Phase 3 运行时验证全部通过
-```
-
-完整蓝图见 [examples/task-cli/BLUEPRINT.md](examples/task-cli/BLUEPRINT.md)。
+[examples/task-cli/BLUEPRINT.md](examples/task-cli/BLUEPRINT.md) 是一个用这套方法从头构建的命令行任务管理器的完整蓝图——4 个模块，15 个接口，9 条数据流。
 
 ## License
 
